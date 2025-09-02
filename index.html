@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page with Auth Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.18.9/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        import React, { useState } from 'react';
+        import { createRoot } from 'react-dom/client';
+
+        const App = () => {
+            const [login, setLogin] = useState('');
+            const [password, setPassword] = useState('');
+            const [inputLogin, setInputLogin] = useState('');
+            const [inputPassword, setInputPassword] = useState('');
+            const [message, setMessage] = useState('');
+
+            const generateRandomString = (length) => {
+                const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let result = '';
+                for (let i = 0; i < length; i++) {
+                    result += characters.charAt(Math.floor(Math.random() * characters.length));
+                }
+                return result;
+            };
+
+            const handleGenerateAuth = async () => {
+                const newLogin = generateRandomString(8);
+                const newPassword = generateRandomString(8);
+                setLogin(newLogin);
+                setPassword(newPassword);
+                setInputLogin('');
+                setInputPassword('');
+                setMessage('');
+
+                const authContent = `login: ${newLogin}\npassword: ${newPassword}`;
+                
+                // Try to use File System Access API if available
+                try {
+                    if ('showSaveFilePicker' in window) {
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: 'auth.txt',
+                            types: [{
+                                description: 'Text Files',
+                                accept: { 'text/plain': ['.txt'] },
+                            }],
+                        });
+                        const writable = await handle.createWritable();
+                        await writable.write(authContent);
+                        await writable.close();
+                    } else {
+                        // Fallback to download
+                        const blob = new Blob([authContent], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = 'auth.txt';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    }
+                } catch (err) {
+                    console.error('Error saving auth.txt:', err);
+                    setMessage('Ошибка при сохранении файла auth.txt');
+                }
+            };
+
+            const handleLoginChange = (e) => {
+                setInputLogin(e.target.value);
+                setMessage('');
+            };
+
+            const handlePasswordChange = (e) => {
+                setInputPassword(e.target.value);
+                setMessage('');
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (inputLogin === login && inputPassword === password) {
+                    setMessage('МОЛОДЕЦ!');
+                    setInputLogin('');
+                    setInputPassword('');
+                } else {
+                    setMessage('Неверный логин или пароль!');
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                    <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+                        <h1 className="text-2xl font-bold mb-6 text-center">Вход</h1>
+                        
+                        <div className="mb-4">
+                            <button
+                                onClick={handleGenerateAuth}
+                                className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mb-4"
+                            >
+                                Сгенерировать новый логин и пароль
+                            </button>
+                            {login && password && (
+                                <div>
+                                    <p className="text-sm text-gray-600">Текущий логин: <span className="font-mono">{login}</span></p>
+                                    <p className="text-sm text-gray-600">Текущий пароль: <span className="font-mono">{password}</span></p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label htmlFor="login" className="block text-sm font-medium text-gray-700">
+                                    Логин
+                                </label>
+                                <input
+                                    id="login"
+                                    type="text"
+                                    value={inputLogin}
+                                    onChange={handleLoginChange}
+                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                    placeholder="Введите логин"
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                                    Пароль
+                                </label>
+                                <input
+                                    id="password"
+                                    type="password"
+                                    value={inputPassword}
+                                    onChange={handlePasswordChange}
+                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                    placeholder="Введите пароль"
+                                />
+                            </div>
+                            <button
+                                onClick={handleSubmit}
+                                className="w-full py-2 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            >
+                                Войти
+                            </button>
+                        </div>
+                        {message && (
+                            <p className={`mt-4 text-center text-lg font-semibold ${message === 'МОЛОДЕЦ!' ? 'text-green-600' : 'text-red-600'}`}>
+                                {message}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
